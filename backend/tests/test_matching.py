@@ -67,3 +67,15 @@ def test_non_remote_job_scores_lower():
     score_remote = score_job(make_job(is_remote=True), make_criteria())
     score_onsite = score_job(make_job(is_remote=False), make_criteria())
     assert score_remote > score_onsite
+
+def test_score_capped_at_100():
+    # Even if all bonuses add up to >100, score should cap at 100
+    job = make_job(title="Staff Software Engineer", is_remote=True)
+    criteria = make_criteria(
+        titles=["Staff Software Engineer"],
+        tech_stack=["Python"],
+        min_salary=125000,
+        company_whitelist=["Acme Corp"]
+    )
+    score = score_job(job, criteria)
+    assert score <= 100

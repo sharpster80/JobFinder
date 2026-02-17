@@ -8,6 +8,8 @@ WEIGHTS = {
     "whitelist": 10,
 }
 
+TITLE_THRESHOLD = 50  # Minimum title match % required to award other bonuses
+
 def score_job(job: dict, criteria: dict) -> int:
     """Score a job against criteria. Returns 0-100. Returns 0 if hard disqualifiers hit."""
 
@@ -35,16 +37,17 @@ def score_job(job: dict, criteria: dict) -> int:
     title = job.get("title") or ""
     title_scores = [fuzz.partial_ratio(t.lower(), title.lower()) for t in criteria["titles"]]
     best_title = max(title_scores) if title_scores else 0
-    score += int((best_title / 100) * WEIGHTS["title"])
+    score += round((best_title / 100) * WEIGHTS["title"])
 
-    # Only award other bonuses if title match is reasonable (>= 50%)
-    if best_title >= 50:
+    # Only award other bonuses if title match meets threshold
+    # This prevents irrelevant jobs from scoring high on bonuses alone
+    if best_title >= TITLE_THRESHOLD:
         # Tech stack match
         job_tags = {t.lower() for t in (job.get("tech_tags") or [])}
         if criteria["tech_stack"] and job_tags:
             matched = sum(1 for t in criteria["tech_stack"] if t.lower() in job_tags)
             ratio = matched / len(criteria["tech_stack"])
-            score += int(ratio * WEIGHTS["tech_stack"])
+            score += round(ratio * WEIGHTS["tech_stack"])
 
         # Remote bonus
         if job.get("is_remote"):
