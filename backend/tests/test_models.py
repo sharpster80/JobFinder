@@ -1,21 +1,8 @@
 import uuid
 from datetime import datetime, timezone
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.database import Base
 from app.models import Job, JobMatch, SearchCriteria, ScrapeRun, Notification, PushSubscription
 
-
-@pytest.fixture(scope="function")
-def db_session():
-    """Create an in-memory SQLite database for testing."""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
+# db_session fixture is now defined in conftest.py
 
 
 def test_job_creation(db_session):
