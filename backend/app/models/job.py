@@ -1,6 +1,6 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import String, Boolean, Integer, Text, ARRAY, DateTime, ForeignKey
+from datetime import datetime, timezone
+from sqlalchemy import String, Boolean, Integer, Text, ARRAY, DateTime, ForeignKey, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
@@ -21,13 +21,15 @@ class Job(Base):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     tech_tags: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     posted_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-    scraped_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    scraped_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     matches: Mapped[list["JobMatch"]] = relationship("JobMatch", back_populates="job")
 
     __table_args__ = (
-        {"schema": None},
+        UniqueConstraint('source', 'external_id', name='uix_source_external_id'),
+        Index('ix_jobs_is_active', 'is_active'),
+        Index('ix_jobs_scraped_at', 'scraped_at'),
     )
 
 class JobMatch(Base):
@@ -43,12 +45,17 @@ class JobMatch(Base):
     job: Mapped["Job"] = relationship("Job", back_populates="matches")
     criteria: Mapped["SearchCriteria"] = relationship("SearchCriteria", back_populates="matches")
 
+    __table_args__ = (
+        Index('ix_job_matches_status', 'status'),
+        Index('ix_job_matches_score', 'match_score'),
+    )
+
 class ScrapeRun(Base):
     __tablename__ = "scrape_runs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     source: Mapped[str] = mapped_column(String(50))
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     finished_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     jobs_found: Mapped[int] = mapped_column(Integer, default=0)
     jobs_new: Mapped[int] = mapped_column(Integer, default=0)
