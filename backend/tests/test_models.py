@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -32,7 +32,7 @@ def test_job_creation(db_session):
         salary_max=150000,
         description="Great job opportunity",
         tech_tags=["python", "fastapi", "postgresql"],
-        posted_at=datetime.utcnow(),
+        posted_at=datetime.now(timezone.utc),
     )
     db_session.add(job)
     db_session.commit()
