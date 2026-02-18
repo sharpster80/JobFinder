@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models import Job, JobMatch, SearchCriteria, ScrapeRun
 from app.scrapers.base import ScrapedJob
 from app.matching import score_job
+from app.config import settings
 
 MATCH_THRESHOLD = 50
 
@@ -66,6 +67,15 @@ def run_matching(db: Session, new_only: bool = True) -> int:
                 match = JobMatch(job_id=job.id, criteria_id=criteria.id, match_score=score)
                 db.add(match)
                 match_count += 1
+                # Send push notification for high-scoring matches
+                if score >= settings.notification_score_threshold:
+                    from app.notifications.push import send_push_notification
+                    send_push_notification(
+                        db, job.id,
+                        title=f"New match: {job.title}",
+                        body=f"{job.company} — Score: {score}",
+                        url=job.url,
+                    )
     db.commit()
     return match_count
 
