@@ -1,6 +1,6 @@
-import { getJobs, getCriteria, triggerScrape } from "@/lib/api";
+import { getJobs, getCriteria } from "@/lib/api";
 import JobTable from "./components/JobTable";
-import { Button } from "@/components/ui/button";
+import RefreshButton from "./components/RefreshButton";
 
 export default async function Home({
   searchParams,
@@ -18,9 +18,7 @@ export default async function Home({
     <main className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Job Matches</h1>
-        <form action={async () => { "use server"; await triggerScrape(); }}>
-          <Button type="submit">Refresh Now</Button>
-        </form>
+        <RefreshButton />
       </div>
 
       <div className="flex gap-3 mb-4 flex-wrap">

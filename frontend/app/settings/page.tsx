@@ -7,10 +7,20 @@ const API_URL = "http://localhost:8000";
 
 export default function SettingsPage() {
   const [runs, setRuns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
 
   useEffect(() => {
-    getScrapeRuns().then(setRuns);
+    getScrapeRuns()
+      .then(data => {
+        console.log('Scrape runs received:', data);
+        setRuns(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching scrape runs:', err);
+        setLoading(false);
+      });
   }, []);
 
   async function subscribePush() {
@@ -48,28 +58,34 @@ export default function SettingsPage() {
 
       <section>
         <h2 className="font-semibold mb-3">Scrape History</h2>
-        <table className="w-full text-sm border rounded">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-2 text-left">Source</th>
-              <th className="px-4 py-2 text-left">Time</th>
-              <th className="px-4 py-2 text-right">Found</th>
-              <th className="px-4 py-2 text-right">New</th>
-              <th className="px-4 py-2 text-left">Error</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {runs.map(r => (
-              <tr key={r.id} className={r.error ? "bg-red-50" : ""}>
-                <td className="px-4 py-2">{r.source}</td>
-                <td className="px-4 py-2 text-gray-500">{new Date(r.started_at).toLocaleString()}</td>
-                <td className="px-4 py-2 text-right">{r.jobs_found}</td>
-                <td className="px-4 py-2 text-right font-medium">{r.jobs_new}</td>
-                <td className="px-4 py-2 text-red-500 text-xs">{r.error || ""}</td>
+        {loading ? (
+          <p className="text-gray-500 text-sm">Loading scrape history...</p>
+        ) : runs.length === 0 ? (
+          <p className="text-gray-500 text-sm">No scrape runs yet. Click "Refresh Now" on the home page to start scraping.</p>
+        ) : (
+          <table className="w-full text-sm border rounded">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <tr>
+                <th className="px-4 py-2 text-left">Source</th>
+                <th className="px-4 py-2 text-left">Time</th>
+                <th className="px-4 py-2 text-right">Found</th>
+                <th className="px-4 py-2 text-right">New</th>
+                <th className="px-4 py-2 text-left">Error</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y">
+              {runs.map(r => (
+                <tr key={r.id} className={r.error ? "bg-red-50" : ""}>
+                  <td className="px-4 py-2">{r.source}</td>
+                  <td className="px-4 py-2 text-gray-500">{new Date(r.started_at).toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right">{r.jobs_found}</td>
+                  <td className="px-4 py-2 text-right font-medium">{r.jobs_new}</td>
+                  <td className="px-4 py-2 text-red-500 text-xs">{r.error || ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </main>
   );
