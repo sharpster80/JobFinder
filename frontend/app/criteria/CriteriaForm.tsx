@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Client-side component always uses localhost for browser API calls
+const API_URL = "http://localhost:8000";
 
 type Criteria = {
   id?: string; name: string; titles: string[]; tech_stack: string[];
@@ -43,13 +44,21 @@ export default function CriteriaForm({ existing }: { existing: Criteria[] }) {
   const [editing, setEditing] = useState<Criteria | null>(null);
 
   async function save(c: Criteria) {
-    const method = c.id ? "PUT" : "POST";
-    const url = c.id ? `${API_URL}/api/criteria/${c.id}` : `${API_URL}/api/criteria`;
-    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(c) });
-    const saved = await res.json();
-    if (c.id) setList(list.map(x => x.id === c.id ? saved : x));
-    else setList([...list, saved]);
-    setEditing(null);
+    try {
+      const method = c.id ? "PUT" : "POST";
+      const url = c.id ? `${API_URL}/api/criteria/${c.id}` : `${API_URL}/api/criteria`;
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(c) });
+      if (!res.ok) {
+        throw new Error(`Failed to save: ${res.status} ${res.statusText}`);
+      }
+      const saved = await res.json();
+      if (c.id) setList(list.map(x => x.id === c.id ? saved : x));
+      else setList([...list, saved]);
+      setEditing(null);
+    } catch (error) {
+      console.error('Error saving criteria:', error);
+      alert(`Error saving criteria: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async function remove(id: string) {
