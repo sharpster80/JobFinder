@@ -1,3 +1,4 @@
+import hashlib
 import httpx
 from bs4 import BeautifulSoup
 from app.scrapers.base import BaseScraper, ScrapedJob
@@ -46,12 +47,19 @@ class DiceScraper(BaseScraper):
             # skills can be null, handle it
             skills = item.get("skills") or []
 
+            # Generate deterministic external_id to deduplicate same job with different Dice IDs
+            title = item.get("title", "")
+            company = item.get("companyName", item.get("employerName", ""))
+            # Create hash from title + company + salary range to identify unique positions
+            dedupe_key = f"{title}|{company}|{salary_min}|{salary_max}"
+            external_id = hashlib.md5(dedupe_key.encode()).hexdigest()
+
             jobs.append(ScrapedJob(
                 source=self.source_name,
-                external_id=item.get("id", ""),
-                url=item.get("detailsPageUrl", ""),  # Use the correct URL from API
-                title=item.get("title", ""),
-                company=item.get("companyPageUrl", item.get("advertiser", {}).get("name", "")),
+                external_id=external_id,
+                url=item.get("detailsPageUrl", ""),
+                title=title,
+                company=company,
                 location=item.get("location", ""),
                 is_remote=is_remote,
                 salary_min=salary_min,
