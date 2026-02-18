@@ -54,7 +54,7 @@ class DiceScraper(BaseScraper):
             dedupe_key = f"{title}|{company}|{salary_min}|{salary_max}"
             external_id = hashlib.md5(dedupe_key.encode()).hexdigest()
 
-            jobs.append(ScrapedJob(
+            job = ScrapedJob(
                 source=self.source_name,
                 external_id=external_id,
                 url=item.get("detailsPageUrl", ""),
@@ -66,5 +66,9 @@ class DiceScraper(BaseScraper):
                 salary_max=salary_max,
                 description=item.get("descriptionFragment", ""),
                 tech_tags=skills,
-            ))
+            )
+            # Deduplicate within scrape results (Dice returns same job multiple times)
+            if not any(j.external_id == external_id for j in jobs):
+                jobs.append(job)
+
         return jobs
