@@ -29,8 +29,22 @@ class DiceScraper(BaseScraper):
         for item in data.get("data", []):
             salary_min = salary_max = None
             if item.get("salary"):
-                # Salary comes as "$100K - $150K" — extract if possible
-                pass  # Leave for later, salary not always present
+                # Parse "USD 166,500.00 - 291,400.00 per year"
+                import re
+                salary_str = item["salary"]
+                numbers = re.findall(r'[\d,]+\.?\d*', salary_str)
+                if len(numbers) >= 2:
+                    salary_min = int(float(numbers[0].replace(',', '')))
+                    salary_max = int(float(numbers[1].replace(',', '')))
+                elif len(numbers) == 1:
+                    salary_min = int(float(numbers[0].replace(',', '')))
+
+            # workplaceTypes can be null, but we're filtering for Remote in params
+            # so if we get results, they should be remote
+            is_remote = True  # We filter for Remote in the API params
+
+            # skills can be null, handle it
+            skills = item.get("skills") or []
 
             jobs.append(ScrapedJob(
                 source=self.source_name,
@@ -39,8 +53,10 @@ class DiceScraper(BaseScraper):
                 title=item.get("title", ""),
                 company=item.get("companyPageUrl", item.get("advertiser", {}).get("name", "")),
                 location=item.get("location", ""),
-                is_remote="remote" in item.get("workplaceTypes", "").lower(),
+                is_remote=is_remote,
+                salary_min=salary_min,
+                salary_max=salary_max,
                 description=item.get("descriptionFragment", ""),
-                tech_tags=item.get("skills", []),
+                tech_tags=skills,
             ))
         return jobs
