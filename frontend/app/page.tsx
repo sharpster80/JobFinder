@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { status?: string; min_score?: string; criteria_id?: string };
+  searchParams: Promise<{ status?: string; min_score?: string; criteria_id?: string }>;
 }) {
+  const params = await searchParams;
   const jobs = await getJobs({
-    status: searchParams.status,
-    min_score: searchParams.min_score ? Number(searchParams.min_score) : undefined,
-    criteria_id: searchParams.criteria_id,
+    status: params.status,
+    min_score: params.min_score ? Number(params.min_score) : undefined,
+    criteria_id: params.criteria_id,
   });
 
   return (
