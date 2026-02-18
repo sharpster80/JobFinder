@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { getScrapeRuns } from "@/lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Client-side component always uses localhost for browser API calls
+const API_URL = "http://localhost:8000";
 
 export default function SettingsPage() {
   const [runs, setRuns] = useState<any[]>([]);
