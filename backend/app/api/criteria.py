@@ -43,6 +43,8 @@ def update_criteria(criteria_id: uuid.UUID, data: CriteriaCreate, db: Session = 
     from app.models import Job, JobMatch
     from app.matching import score_job
     from app.services.scrape_service import MATCH_THRESHOLD
+    import logging
+    logger = logging.getLogger(__name__)
 
     c = db.query(SearchCriteria).filter_by(id=criteria_id).first()
     if not c:
@@ -52,7 +54,9 @@ def update_criteria(criteria_id: uuid.UUID, data: CriteriaCreate, db: Session = 
     db.commit()
 
     # Delete existing matches for this criteria
-    db.query(JobMatch).filter_by(criteria_id=criteria_id).delete()
+    deleted_count = db.query(JobMatch).filter_by(criteria_id=criteria_id).delete()
+    print(f"[RESCORING] Deleted {deleted_count} old matches for criteria {criteria_id}")
+    logger.info(f"Re-scoring criteria {criteria_id}: Deleted {deleted_count} old matches")
     db.commit()
 
     # Re-score all active jobs against updated criteria
@@ -63,6 +67,7 @@ def update_criteria(criteria_id: uuid.UUID, data: CriteriaCreate, db: Session = 
         "company_whitelist": c.company_whitelist,
     }
 
+    new_matches = 0
     for job in db.query(Job).filter_by(is_active=True).all():
         job_dict = {
             "title": job.title, "company": job.company,
@@ -74,8 +79,11 @@ def update_criteria(criteria_id: uuid.UUID, data: CriteriaCreate, db: Session = 
         if score >= MATCH_THRESHOLD:
             match = JobMatch(job_id=job.id, criteria_id=criteria_id, match_score=score)
             db.add(match)
+            new_matches += 1
 
     db.commit()
+    print(f"[RESCORING] Created {new_matches} new matches for criteria {criteria_id}")
+    logger.info(f"Re-scoring criteria {criteria_id}: Created {new_matches} new matches")
     return {"id": str(criteria_id), **data.model_dump()}
 
 @router.delete("/{criteria_id}", status_code=204)
