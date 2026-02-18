@@ -41,6 +41,10 @@ class LinkedInScraper(BaseScraper):
                     if not title:
                         continue
 
+                    # We filter for remote in URL params (f_WT=2), so assume remote
+                    # Location text like "United States" doesn't contain "remote"
+                    is_remote = True
+
                     jobs.append(ScrapedJob(
                         source=self.source_name,
                         external_id=external_id,
@@ -48,7 +52,7 @@ class LinkedInScraper(BaseScraper):
                         title=title,
                         company=company,
                         location=location,
-                        is_remote="remote" in location.lower(),
+                        is_remote=is_remote,
                     ))
                 except Exception:
                     continue
