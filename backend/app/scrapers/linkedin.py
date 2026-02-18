@@ -36,14 +36,17 @@ class LinkedInScraper(BaseScraper):
                     company = company_el.inner_text().strip() if company_el else ""
                     location = location_el.inner_text().strip() if location_el else ""
                     url = link_el.get_attribute("href") if link_el else ""
-                    external_id = hashlib.md5(url.encode()).hexdigest() if url else ""
 
                     if not title:
                         continue
 
                     # We filter for remote in URL params (f_WT=2), so assume remote
-                    # Location text like "United States" doesn't contain "remote"
                     is_remote = True
+
+                    # Generate deterministic external_id to deduplicate same remote job
+                    # posted in multiple locations (LinkedIn posts same remote job with different location tags)
+                    dedupe_key = f"{title}|{company}"
+                    external_id = hashlib.md5(dedupe_key.encode()).hexdigest()
 
                     jobs.append(ScrapedJob(
                         source=self.source_name,
