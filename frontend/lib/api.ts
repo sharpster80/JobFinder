@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Server-side uses Docker service name, client-side uses localhost
+const API_URL = typeof window === 'undefined'
+  ? process.env.API_URL || "http://api:8000"
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function getJobs(params: {
   status?: string;
