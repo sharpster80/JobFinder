@@ -11,32 +11,39 @@ class WeWorkRemotelyScraper(BaseScraper):
     def scrape(self) -> list[ScrapedJob]:
         response = httpx.get(WWR_URL, headers={"User-Agent": "JobFinder/1.0"}, timeout=30)
         response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
+
+        # WeWorkRemotely returns RSS/XML, not HTML
+        soup = BeautifulSoup(response.text, "xml")
 
         jobs = []
-        for li in soup.select("section.jobs ul li"):
-            if "feature" in li.get("class", []):
-                continue
-            a = li.find("a")
-            if not a:
+        for item in soup.find_all("item"):
+            try:
+                # Parse RSS item
+                title_text = item.find("title").text if item.find("title") else ""
+                link = item.find("link").text if item.find("link") else ""
+                region = item.find("region").text if item.find("region") else "Remote"
+
+                if not title_text or not link:
+                    continue
+
+                # Title format: "Company: Job Title"
+                if ": " in title_text:
+                    company, title = title_text.split(": ", 1)
+                else:
+                    company = ""
+                    title = title_text
+
+                external_id = hashlib.md5(link.encode()).hexdigest()
+                jobs.append(ScrapedJob(
+                    source=self.source_name,
+                    external_id=external_id,
+                    url=link,
+                    title=title.strip(),
+                    company=company.strip(),
+                    location=region.strip(),
+                    is_remote=True,
+                ))
+            except Exception:
                 continue
 
-            company = a.find(class_="company")
-            title = a.find(class_="title")
-            region = a.find(class_="region")
-            href = a.get("href", "")
-
-            if not title:
-                continue
-
-            external_id = hashlib.md5(href.encode()).hexdigest()
-            jobs.append(ScrapedJob(
-                source=self.source_name,
-                external_id=external_id,
-                url=f"https://weworkremotely.com{href}",
-                title=title.text.strip(),
-                company=company.text.strip() if company else "",
-                location=region.text.strip() if region else "Remote",
-                is_remote=True,
-            ))
         return jobs
