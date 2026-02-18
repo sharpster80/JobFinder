@@ -33,15 +33,48 @@ def create_criteria(data: CriteriaCreate, db: Session = Depends(get_db)):
     db.add(c)
     db.commit()
     db.refresh(c)
+    # Re-run matching for all active jobs with new criteria
+    from app.services.scrape_service import run_matching
+    run_matching(db, new_only=False)
     return {"id": str(c.id), **data.model_dump()}
 
 @router.put("/{criteria_id}")
 def update_criteria(criteria_id: uuid.UUID, data: CriteriaCreate, db: Session = Depends(get_db)):
+    from app.models import Job, JobMatch
+    from app.matching import score_job
+    from app.services.scrape_service import MATCH_THRESHOLD
+
     c = db.query(SearchCriteria).filter_by(id=criteria_id).first()
     if not c:
         raise HTTPException(status_code=404)
     for key, val in data.model_dump().items():
         setattr(c, key, val)
+    db.commit()
+
+    # Delete existing matches for this criteria
+    db.query(JobMatch).filter_by(criteria_id=criteria_id).delete()
+    db.commit()
+
+    # Re-score all active jobs against updated criteria
+    criteria_dict = {
+        "titles": c.titles, "tech_stack": c.tech_stack,
+        "min_salary": c.min_salary, "exclude_keywords": c.exclude_keywords,
+        "company_blacklist": c.company_blacklist,
+        "company_whitelist": c.company_whitelist,
+    }
+
+    for job in db.query(Job).filter_by(is_active=True).all():
+        job_dict = {
+            "title": job.title, "company": job.company,
+            "description": job.description, "salary_min": job.salary_min,
+            "salary_max": job.salary_max, "is_remote": job.is_remote,
+            "tech_tags": job.tech_tags,
+        }
+        score = score_job(job_dict, criteria_dict)
+        if score >= MATCH_THRESHOLD:
+            match = JobMatch(job_id=job.id, criteria_id=criteria_id, match_score=score)
+            db.add(match)
+
     db.commit()
     return {"id": str(criteria_id), **data.model_dump()}
 

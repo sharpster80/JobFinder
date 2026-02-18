@@ -24,14 +24,26 @@ function TagInput({ label, value, onChange }: { label: string; value: string[]; 
       <label className="text-sm font-medium text-gray-700">{label}</label>
       <div className="flex gap-2 mt-1">
         <Input value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && input.trim()) { onChange([...value, input.trim()]); setInput(""); e.preventDefault(); }}}
+          onKeyDown={e => {
+            if (e.key === "Enter" && input.trim()) {
+              const newValue = [...value, input.trim()];
+              console.log(`${label}: Adding tag "${input.trim()}", new value:`, newValue);
+              onChange(newValue);
+              setInput("");
+              e.preventDefault();
+            }
+          }}
           placeholder="Type and press Enter" />
       </div>
       <div className="flex flex-wrap gap-1 mt-2">
         {value.map(v => (
           <span key={v} className="bg-gray-100 px-2 py-0.5 rounded text-sm flex items-center gap-1">
             {v}
-            <button onClick={() => onChange(value.filter(x => x !== v))} className="text-gray-400 hover:text-red-500">×</button>
+            <button onClick={() => {
+              const newValue = value.filter(x => x !== v);
+              console.log(`${label}: Removing tag "${v}", new value:`, newValue);
+              onChange(newValue);
+            }} className="text-gray-400 hover:text-red-500">×</button>
           </span>
         ))}
       </div>
@@ -45,6 +57,8 @@ export default function CriteriaForm({ existing }: { existing: Criteria[] }) {
 
   async function save(c: Criteria) {
     try {
+      console.log('Saving criteria:', c);
+      console.log('Tech stack before save:', c.tech_stack);
       const method = c.id ? "PUT" : "POST";
       const url = c.id ? `${API_URL}/api/criteria/${c.id}` : `${API_URL}/api/criteria`;
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(c) });
@@ -52,6 +66,8 @@ export default function CriteriaForm({ existing }: { existing: Criteria[] }) {
         throw new Error(`Failed to save: ${res.status} ${res.statusText}`);
       }
       const saved = await res.json();
+      console.log('Saved criteria response:', saved);
+      console.log('Tech stack after save:', saved.tech_stack);
       if (c.id) setList(list.map(x => x.id === c.id ? saved : x));
       else setList([...list, saved]);
       setEditing(null);
