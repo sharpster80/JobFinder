@@ -1,7 +1,14 @@
 // Server-side uses Docker service name, client-side uses localhost
-const API_URL = typeof window === 'undefined'
-  ? process.env.API_URL || "http://api:8000"
-  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+function getApiUrl() {
+  // If running in browser (client-side), always use localhost
+  if (typeof window !== 'undefined') {
+    return "http://localhost:8000";
+  }
+  // Server-side: use Docker service name
+  return process.env.API_URL || "http://api:8000";
+}
+
+const API_URL = getApiUrl();
 
 export async function getJobs(params: {
   status?: string;

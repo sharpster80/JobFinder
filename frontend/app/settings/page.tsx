@@ -11,10 +11,11 @@ export default function SettingsPage() {
   const [subscribed, setSubscribed] = useState(false);
 
   useEffect(() => {
+    console.log('Fetching scrape runs...');
     getScrapeRuns()
       .then(data => {
-        console.log('Scrape runs received:', data);
-        setRuns(data);
+        console.log('Scrape runs received:', data, 'Type:', typeof data, 'Is array:', Array.isArray(data));
+        setRuns(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch(err => {
@@ -57,7 +58,7 @@ export default function SettingsPage() {
       </section>
 
       <section>
-        <h2 className="font-semibold mb-3">Scrape History</h2>
+        <h2 className="font-semibold mb-3">Scrape History <span className="text-xs text-gray-500 font-normal">(last 50 runs)</span></h2>
         {loading ? (
           <p className="text-gray-500 text-sm">Loading scrape history...</p>
         ) : runs.length === 0 ? (

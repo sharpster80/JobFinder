@@ -8,13 +8,17 @@ export default function RefreshButton() {
   const [loading, setLoading] = useState(false);
 
   async function handleRefresh() {
+    console.log('Refresh button clicked');
     setLoading(true);
     try {
-      await triggerScrape();
+      console.log('Calling triggerScrape...');
+      const result = await triggerScrape();
+      console.log('Scrape triggered, result:', result);
       toast.success("Scrape started! Check Settings to view progress.");
+      console.log('Toast called');
     } catch (error) {
-      toast.error("Failed to start scrape. Please try again.");
       console.error("Scrape error:", error);
+      toast.error("Failed to start scrape. Please try again.");
     } finally {
       setLoading(false);
     }
