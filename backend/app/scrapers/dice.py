@@ -49,7 +49,7 @@ class DiceScraper(BaseScraper):
             jobs.append(ScrapedJob(
                 source=self.source_name,
                 external_id=item.get("id", ""),
-                url=f"https://www.dice.com/job-detail/{item.get('id', '')}",
+                url=item.get("detailsPageUrl", ""),  # Use the correct URL from API
                 title=item.get("title", ""),
                 company=item.get("companyPageUrl", item.get("advertiser", {}).get("name", "")),
                 location=item.get("location", ""),
